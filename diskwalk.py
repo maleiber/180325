@@ -5,7 +5,7 @@ Created on Sun Mar 25 08:19:16 2018
 @author: 赵怀菩
 """
 import os
-
+##diskwalk is a class used to find source files in a directory.
 class diskwalk(object):
         def __init__(self,path):
                 self.path = path
