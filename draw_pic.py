@@ -14,7 +14,7 @@ class draw_pic(object):
         #value of yarray is necessary
         print (yarray,xcolor,xarray)
         fig,ax = plt.subplots()
-        #fig.set_size_inches(108.5, 10.5)
+        fig.set_size_inches(48.5, 10.5)
         ax.grid(True)
         a=yarray
         cm = plt.cm.get_cmap('RdYlBu')
