@@ -22,6 +22,7 @@ class data_builder(object):
         self._build_random_array()
         #
     def build_array(self):
+        #build a sin array
         if self.length<240:
             print ('too small array: at least 240')
             return
@@ -75,6 +76,20 @@ class data_builder(object):
         
         self.randomlize_xlist=temp_array
         return temp_array
+    def _add_rare(self,complexity):
+        #complexity determind how long the rare array
+        rare_array=[]
+        for i in range(int(complexity)):
+            
+            pass
+     def _build_sin(self,A,w,fai,length,dx=1/12):
+         #f(x)=Asin(wx+fai)
+         a=[x for x in range(length)]
+         #a is xaxis
+         b=[A*(math.sin(i*dx*w+fai)) for i in a]
+         return b
+         pass
+        
         
     
 if __name__=='__main__':
