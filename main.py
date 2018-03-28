@@ -10,10 +10,14 @@ from diskwalk import *
 
 
 if __name__ == '__main__':
-    sitelist=[]
     
-    for file in diskwalk("D:/zhp_workspace/35site").paths():
-        print(file)
-        filename=file
+    
+    
+    pass
+#    sitelist=[]
+    
+#    for file in diskwalk("D:/zhp_workspace/35site").paths():
+#        print(file)
+#        filename=file
         #sitelist.append(timeseq(filename))
                 
