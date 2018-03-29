@@ -8,7 +8,7 @@ import bm_test
 import numpy as np
 import draw_pic
 import data_builder
-
+import math
 class bm_analyze(object):
     def __init__(self,minl,maxl,data_array):
         self.min_len=minl
@@ -123,18 +123,23 @@ class bm_analyze(object):
                     pattern_array=bm_test.BoyerMooreHorspool(sub_seq,self.data_sign)
                     
                     if(len(pattern_array))>1:
-                        print ('effective sub seq at:',i)
+                        print ('effective sub seq at:',i,'time',len(pattern_array))
                         
                     #[time(or key value) position]
                     self.sub_seq_information.append([self._value_sub_seq_in_rare(pattern_array,sub_seq),pattern_array,sub_len])
                     self.sub_dict[hash(tuple(sub_seq))]=True
         #search finished. then sort by value
-        sorted(self.sub_seq_information,key=lambda x:x[0])
+        self.sub_seq_information=sorted(self.sub_seq_information,key=lambda x:x[0])
         #normalize the value as value
+        
         color_value=[x[0] for x in self.sub_seq_information]
-        color_value=Z_ScoreNormalization(color_value,np.average(color_value),np.std(color_value))
-        color_value=[int(v*60) for v in color_value]
-        #print (color_value)
+        
+        #print ('bfcolorvalue',color_value)
+        #color_value=Z_ScoreNormalization(color_value,np.average(color_value),np.std(color_value))
+        max_v=max(color_value)
+        min_v=min(color_value)
+        color_value=[int(250*(v-min_v)/(max_v-min_v)) for v in color_value]
+        #print ('afcolorvalue',color_value)
         for i in range(len(self.sub_seq_information)):
             self.sub_seq_information[i][0]=color_value[i]
             
@@ -146,12 +151,17 @@ class bm_analyze(object):
         complexity=np.std(sub)
         leng=len(sub)
         appearence_t=len(pattern_array)
-        _value=complexity*leng/(appearence_t)
+        if appearence_t<2:
+            return 0
+        _value=leng*(appearence_t-1)
         return _value
     
-    def _fill_color_value(self):
-        self.color_value=[10 for x in self.dataseq]
-        for i in range(len(self.sub_seq_information)):
+    def _fill_color_value(self,match_number=6):
+        #strgory change: 1match,1color
+        
+        self.color_value=[]
+        for i in range(max(len(self.sub_seq_information),match_number)):
+            color_value_array=[10 for x in self.dataseq]
             value=self.sub_seq_information[i][0]
 #            if value < 0.75:
 #                continue
@@ -159,7 +169,9 @@ class bm_analyze(object):
             temp_len=self.sub_seq_information[i][2]
             for p in position:
                 for j in range(temp_len):
-                    self.color_value[p+j]=max(value,abs(self.color_value[p+j]))
+                    color_value_array[p+j]=max(value,color_value_array[p+j])
+            #self.color_value.append(color_value_array)
+            self.color_value=color_value_array
             
         pass
     pass
@@ -169,8 +181,8 @@ def Z_ScoreNormalization(x,mu,sigma):
 
 if __name__=='__main__':
     
-    b=data_builder.data_builder(20,30,600,0.025,1)
-    a=[x for x in range(600)]
+    b=data_builder.data_builder(20,30,1200,0.025,1)
+    a=[x for x in range(1200)]
     draw_pic.draw_pic( b.randomlize_xlist,False,a)
     
     b.add_rare(100,80)
@@ -183,5 +195,6 @@ if __name__=='__main__':
     draw_pic.draw_pic( b.randomlize_xlist,False,a)
     #print ('color value',c.color_value)
     
+    #for i in range(6):
     draw_pic.draw_pic(c.dataseq,c.color_value,a)
     pass
