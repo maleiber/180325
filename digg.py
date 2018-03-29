@@ -14,47 +14,117 @@ class bm_analyze(object):
         self.min_len=minl
         self.max_len=maxl
         self.dataseq=data_array
+        self.data_sign=[]
         self.sub_seq_information=[]
         self.sub_dict={}
         self.color_value=[]
+        
         self._blurry()
+        self._signallize()
         pass
     def _blurry(self):
         
-        new_seq=[   int(
-                        1/5*self.dataseq[max(i-2,0)]+
-                        1/5*self.dataseq[max(i-1,0)]+
-                        1/5*self.dataseq[i]+
-                        1/5*self.dataseq[min(i+1,len(self.dataseq)-1)]+
-                        1/5*self.dataseq[min(i+2,len(self.dataseq)-1)]
-                    )
+        new_seq=[   #int(
+                        1/7*self.dataseq[max(i-3,0)]+
+                        1/7*self.dataseq[max(i-2,0)]+
+                        1/7*self.dataseq[max(i-1,0)]+
+                        1/7*self.dataseq[i]+
+                        1/7*self.dataseq[min(i+1,len(self.dataseq)-1)]
+                        +1/7*self.dataseq[min(i+2,len(self.dataseq)-1)]
+                        +1/7*self.dataseq[min(i+3,len(self.dataseq)-1)]
+                    #)
                     for i in range(len(self.dataseq))
                 ]
         self.dataseq=new_seq
             
         pass
+    def _signallize(self):
+        prev=self.dataseq[0]
+
+        #self.data_sign.append(prev)
+        for i in range(len(self.dataseq)-1):
+            now=self.dataseq[i]
+            self.data_sign.append(now-prev)
+            prev=now
+        #finished dx
+        #normalize
+
+        
+        aver=np.average(self.data_sign)
+        std=np.std(self.data_sign)
+        
+        #self.data_sign=Z_ScoreNormalization(self.data_sign,np.average(self.data_sign),np.std(self.data_sign))
+        #dont know why the first value is wrong
+        tempsign = [(x - aver) / std for x in self.data_sign]; 
+        self.data_sign=tempsign
+        #self.data_sign=self.data_sign[1:]
+        #print ('len of datasign',len(self.data_sign) )
+        a=[i for i in range(len(self.dataseq))]
+        #draw_pic.draw_pic(self.dataseq,False,a)
+        
+        
+        #devide gradient
+        glevel=21
+        min_v=min(self.data_sign)
+        max_v=max(self.data_sign)
+        value_per_g=(max_v-min_v)/glevel
+        #print ('data_sign:',self.data_sign)
+        #print ('value per geadint:',value_per_g,'min:',min_v,'max_v',max_v)
+        #assign glevel
+        new_sign=[]
+        for i in range(len(self.data_sign)):
+            new_sign.append(int(round((self.data_sign[i]-min_v)/value_per_g)))
+        self.data_sign=new_sign
+        #
+        #self.data_sign[0]=(np.average(self.data_sign)-min_v)/value_per_g
+        #print ('new—data-sign',self.data_sign)
+        #print ('len of datasign',len(self.data_sign) )
+        self.data_sign.append(0)
+        print ('data_sign:')
+        
+        
+        
+        #blurry
+        new_seq=[   int(round(
+                        
+                        1/5*self.data_sign[max(i-2,0)]+
+                        1/5*self.data_sign[max(i-1,0)]+
+                        1/5*self.data_sign[i]+
+                        1/5*self.data_sign[min(i+1,len(self.data_sign)-1)]
+                        +1/5*self.data_sign[min(i+2,len(self.data_sign)-1)]
+                        
+                    ))
+                    for i in range(len(self.data_sign))
+                ]
+        self.data_sign=new_seq
+        
+        
+        draw_pic.draw_pic(self.data_sign,False,a)
+        
+        pass
+    
     def bm_search(self):
         #origin version
         
         
         for sub_len in range(self.min_len,self.max_len+1):
             print ('now sublen:',sub_len)
-            for i in range(len(self.dataseq)):
+            for i in range(len(self.data_sign)):
             #i is p
                 #len of subseq is [min,max]
                 
                 sub_end=i+sub_len
-                if sub_end>=len(self.dataseq):
+                if sub_end>=len(self.data_sign):
                     #goal sub exceed
                     break
-                sub_seq=self.dataseq[i:sub_end]
+                sub_seq=self.data_sign[i:sub_end]
                 if self.sub_dict.get(hash(tuple(sub_seq)))!=True:
                     #not search this seq yet
-                    pattern_array=bm_test.BoyerMooreHorspool(sub_seq,self.dataseq)
+                    pattern_array=bm_test.BoyerMooreHorspool(sub_seq,self.data_sign)
                     
                     if(len(pattern_array))>1:
                         print ('effective sub seq at:',i)
-                        #input()
+                        
                     #[time(or key value) position]
                     self.sub_seq_information.append([self._value_sub_seq_in_rare(pattern_array,sub_seq),pattern_array,sub_len])
                     self.sub_dict[hash(tuple(sub_seq))]=True
@@ -64,7 +134,7 @@ class bm_analyze(object):
         color_value=[x[0] for x in self.sub_seq_information]
         color_value=Z_ScoreNormalization(color_value,np.average(color_value),np.std(color_value))
         color_value=[int(v*60) for v in color_value]
-        print (color_value)
+        #print (color_value)
         for i in range(len(self.sub_seq_information)):
             self.sub_seq_information[i][0]=color_value[i]
             
@@ -99,19 +169,19 @@ def Z_ScoreNormalization(x,mu,sigma):
 
 if __name__=='__main__':
     
-    b=data_builder.data_builder(20,30,1000,0.025,1)
-    a=[x for x in range(1000)]
-    draw_pic.draw_pic([int(x) for x in b.randomlize_xlist],False,a)
+    b=data_builder.data_builder(20,30,600,0.025,1)
+    a=[x for x in range(600)]
+    draw_pic.draw_pic( b.randomlize_xlist,False,a)
     
     b.add_rare(100,80)
-    b.add_rare(100,90)
+    b.add_rare(100,80)
     b.insert_rare_in_rlist()
-    c=bm_analyze(60,100,[int(x) for x in b.randomlize_xlist])
+    c=bm_analyze(60,100, b.randomlize_xlist)
     c.bm_search()
 
     a=[x for x in range(len(b.randomlize_xlist))]
-    draw_pic.draw_pic([int(x) for x in b.randomlize_xlist],False,a)
-    print ('color value',c.color_value)
+    draw_pic.draw_pic( b.randomlize_xlist,False,a)
+    #print ('color value',c.color_value)
     
     draw_pic.draw_pic(c.dataseq,c.color_value,a)
     pass

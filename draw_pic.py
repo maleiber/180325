@@ -12,7 +12,7 @@ import math
 class draw_pic(object):
     def __init__(self,yarray,xcolor=False,xarray=False,draw_line=True):
         #value of yarray is necessary
-        print (yarray,xcolor,xarray)
+        #print (yarray,xcolor,xarray)
         fig,ax = plt.subplots()
         fig.set_size_inches(48.5, 10.5)
         ax.grid(True)
