@@ -103,6 +103,82 @@ class bm_analyze(object):
         
         pass
     
+    def slide_bm_search(self):
+        #try bm search with slide wimdow
+        #infact only thesmallest time need to do bm search
+        self.start_index=[[] for i in self.data_sign]
+        #start index [index1,index2,index3]
+        #   each index:[[end1,time],[end2,time]]
+        #   end will be record when time>1
+        #   could get the len by end and start
+        #   end ought be sorted
+        w=self.min_len
+        #first time
+        for i in range(len(self.data_sign)):
+            start=i
+            end=i+w
+            print('end',end)
+            if end>=len(self.data_sign):
+                #goal sub exceed
+                break
+            sub_seq=self.data_sign[start:end]
+            if self.sub_dict.get(hash(tuple(sub_seq)))==None:
+                #not search this seq yet
+                pattern_array=bm_test.BoyerMooreHorspool(sub_seq,self.data_sign)
+                
+                if(len(pattern_array))>1:
+                    print ('effective sub seq at:',i,'time',len(pattern_array))
+                for pos in pattern_array:    
+                    self.start_index[pos].append([pos+w,len(pattern_array)])
+                #[time(or key value) position]
+                #self.sub_seq_information.append([self._value_sub_seq_in_rare(pattern_array,sub_seq),pattern_array,sub_len])
+                print('subseq',sub_seq)
+                print ('prev_pa',pattern_array)
+                self.sub_dict[hash(tuple(sub_seq))]=pattern_array
+                #sub_dict record startpos of sub sequence
+        print ('ttlen',len(self.data_sign))
+        input()
+        while w<self.max_len:
+            for i in range(len(self.data_sign)):
+                start=i
+                end=i+w
+                print('end',end)
+                if end+1>=len(self.data_sign):
+                    #goal sub exceed
+                    break
+                prev_seq=self.data_sign[start:end]
+                
+                now_seq=[x for x in prev_seq]
+                now_seq.append(self.data_sign[end+1])
+                print ('prev_seq',prev_seq,len(prev_seq))
+                print ('now_seq',now_seq,len(now_seq))
+                prev_seq_hash_key=hash(tuple(prev_seq))
+                prev_pa=self.sub_dict[prev_seq_hash_key]
+                print ('prev_pa',prev_pa)
+                now_pa=[start]
+                for pos in prev_pa:
+                    if pos!=start:
+                        #compare w+1 and add to now pattern array
+                        temp_end=pos+w+1
+                        if temp_end>=len(self.data_sign):
+                            pass
+                        elif self.data_sign[end+1]==self.data_sign[temp_end]:
+                            now_pa.append(pos)
+                
+                if(len(now_pa))>1:
+                    print ('effective sub seq at:',i,'time',len(now_pa))
+                for pos in now_pa:    
+                    self.start_index[pos].append([pos+w+1,len(now_pa)])            
+                self.sub_dict[hash(tuple(now_seq))]=now_pa
+                
+                
+            w=w+1
+        
+        self._value_sub_seq_in_rare_slide()
+        
+        
+        pass
+    
     def bm_search(self):
         #origin version
         
@@ -156,6 +232,33 @@ class bm_analyze(object):
         _value=leng*(appearence_t-1)
         return _value
     
+    def _value_sub_seq_in_rare_slide(self):
+        #value in slide window
+        #give [value,[start,end]]
+        value_of_array=[]
+        #start index [index1,index2,index3]
+        #   each index:[[end1,time],[end2,time]]
+        for i in range(len(self.start_index)):
+            count=0
+            self.start_index[i]=sorted(self.start_index[i],key=lambda x:x[0])
+            for p in self.start_index[i]:
+                if p[1]>1:
+                    count=count+p[1]-1
+                    value=(p[0]-i)*p[1]/count
+                    value_of_array.append([value,[i,p[0]]])
+        #test
+        color_value_array=[10 for x in self.dataseq]
+        self.color_value=[]
+        value_of_array=sorted(value_of_array,key=lambda x:x[0],reverse=True)
+        
+        print (value_of_array)
+        for pair in value_of_array:
+            if pair[0]>70:
+                (start,end)=pair[1]
+                for i in range(start,end):
+                    color_value_array[i]=pair[0]
+        self.color_value=color_value_array            
+        pass
     def _fill_color_value(self,match_number=6):
         #strgory change: 1match,1color
         
@@ -189,8 +292,8 @@ if __name__=='__main__':
     b.add_rare(100,80)
     b.insert_rare_in_rlist()
     c=bm_analyze(60,100, b.randomlize_xlist)
-    c.bm_search()
-
+    #c.bm_search()
+    c.slide_bm_search()
     a=[x for x in range(len(b.randomlize_xlist))]
     draw_pic.draw_pic( b.randomlize_xlist,False,a)
     #print ('color value',c.color_value)
