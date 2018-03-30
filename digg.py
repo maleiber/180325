@@ -87,11 +87,11 @@ class bm_analyze(object):
         #blurry
         new_seq=[   int(round(
                         
-                        1/5*self.data_sign[max(i-2,0)]+
-                        1/5*self.data_sign[max(i-1,0)]+
-                        1/5*self.data_sign[i]+
-                        1/5*self.data_sign[min(i+1,len(self.data_sign)-1)]
-                        +1/5*self.data_sign[min(i+2,len(self.data_sign)-1)]
+                        #1/5*self.data_sign[max(i-2,0)]+
+                        #1/3*self.data_sign[max(i-1,0)]+
+                        1*self.data_sign[i]
+                        #+1/3*self.data_sign[min(i+1,len(self.data_sign)-1)]
+                        #+1/5*self.data_sign[min(i+2,len(self.data_sign)-1)]
                         
                     ))
                     for i in range(len(self.data_sign))
@@ -102,6 +102,8 @@ class bm_analyze(object):
         draw_pic.draw_pic(self.data_sign,False,a)
         
         pass
+    
+    
     
     def slide_bm_search(self):
         #try bm search with slide wimdow
@@ -263,22 +265,50 @@ class bm_analyze(object):
         value_of_array=sorted(value_of_array,key=lambda x:x[0],reverse=True)
         value_normalize=[v[0] for v in value_of_array]
         value_normalize=Z_ScoreNormalization(value_normalize,np.average(value_normalize),np.std(value_normalize))
+        if len(value_normalize)==0:
+            print ('No effective information dectected.')
+            self.color_value=color_value_array
+            return
         min_v=min(value_normalize)
         max_v=max(value_normalize)
         
         for i in range(len(value_of_array)):
-            value_of_array[i][0]=250*(value_normalize[i]-min_v)/(max_v-min_v)
-            
+            value_of_array[i][0]=(value_normalize[i]-min_v)/(max_v-min_v)
+        
+        
+        self._draw_2_d_scatter(value_of_array)
+        for i in range(len(value_of_array)):
+            value_of_array[i][0]=250*value_of_array[i][0]
         print (value_of_array)
+        # only show 10 pair of match in one picture
+        
         for pair in value_of_array:
-            if pair[0]>70:
+            
+            if pair[0]>180:
                 (startpos,leng)=(pair[2],pair[1])
                 for p in startpos:
                     for i in range(leng):
                         color_value_array[p+i]=max(pair[0],color_value_array[p+i])
         self.color_value=color_value_array            
         pass
-    
+    def _draw_2_d_scatter(self,value_of_array):
+        x_list=[]
+        y_list=[]
+        alpha_list=[]
+        for i in range(len(value_of_array)):
+            length=value_of_array[i][1]
+            pos=value_of_array[i][2]
+            for p in pos:
+                max_v=max(self.dataseq[p:p+length])
+                min_v=min(self.dataseq[p:p+length])
+                alpha=value_of_array[i][0]
+                x_list.append(min_v)
+                y_list.append(max_v)
+                alpha_list.append(alpha)
+        print ('xl',x_list)
+        print ('yl',y_list)
+        draw_pic.draw_sca(x_list,y_list,alpha_list)
+        pass
     
     def _fill_color_value(self,match_number=6):
         #@deprecated
@@ -303,23 +333,35 @@ class bm_analyze(object):
 def Z_ScoreNormalization(x,mu,sigma):  
     x = (x - mu) / sigma;  
     return x;  
+def cos(vector1,vector2):  
+    dot_product = 0.0;  
+    normA = 0.0;  
+    normB = 0.0;  
+    for a,b in zip(vector1,vector2):  
+        dot_product += a*b  
+        normA += a**2  
+        normB += b**2  
+    if normA == 0.0 or normB==0.0:  
+        #return None
+        return 0
+    else:  
+        return dot_product / ((normA*normB)**0.5)  
 
 if __name__=='__main__':
     
-    b=data_builder.data_builder(20,30,2200,0.025,1)
-    a=[x for x in range(2200)]
+
+    b=data_builder.data_builder(20,30,1200,0.025,1)
+    a=[x for x in range(1200)]
     draw_pic.draw_pic( b.randomlize_xlist,False,a)
     
     b.add_rare(100,80)
     b.add_rare(100,80)
     b.insert_rare_in_rlist()
-    c=bm_analyze(60,100, b.randomlize_xlist)
+    c=bm_analyze(70,100, b.randomlize_xlist)
     #c.bm_search()
-    c.slide_bm_search()
+    #c.slide_bm_search()
     a=[x for x in range(len(b.randomlize_xlist))]
     draw_pic.draw_pic( b.randomlize_xlist,False,a)
-    #print ('color value',c.color_value)
     
-    #for i in range(6):
-    draw_pic.draw_pic(c.dataseq,c.color_value,a)
+    draw_pic.draw_pic(c.data_sign,c.color_value,a)
     pass

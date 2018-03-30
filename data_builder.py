@@ -11,7 +11,7 @@ from draw_pic import *
 import time
 
 class data_builder(object):
-    def __init__(self,min_x_value,max_x_value,length,random_factor=0,commonfactor=1):
+    def __init__(self,min_x_value,max_x_value,length,random_factor=0.002,commonfactor=1):
         self.xlist=[]
         self.rare_list=[]
         self.randomlize_xlist=[]
@@ -40,7 +40,7 @@ class data_builder(object):
         self.randomlize_xlist=b
         #b is value in yaxis
         pass
-    def _build_random_array(self,array=False,start=0,end=False,change_randomlize_array=True):
+    def _build_random_array(self,array=False,start=0,end=False,change_randomlize_array=True,do_shift=True):
         #start and end of this index
         #random value is expand of the random series
         if self.length<240:
@@ -56,7 +56,7 @@ class data_builder(object):
             return
         rand=np.random.normal(size=end-start)
         for i in range(end-start):
-            if abs(rand[i])>0.05:
+            if abs(rand[i])>0.04:
                 #too common ,not changes
                 temp=((rand[i]*self.random_factor)+1)*array[start+i]
                 temp_array.append(temp)
@@ -76,7 +76,8 @@ class data_builder(object):
                 blocklength=min(blocklength,end-i)
                 blockshift=randb[i]*0.05*dx
                 for j in range(blocklength):
-                    temp_array[i+j]=temp_array[i+j]+blockshift
+                    if do_shift==True:
+                        temp_array[i+j]=temp_array[i+j]+blockshift
                 now=now+blocklength
         if change_randomlize_array==True:
             self.randomlize_xlist=temp_array
@@ -168,7 +169,7 @@ class data_builder(object):
             #randomlize the rare array
             rare_array=position_lis[i][1]
             
-            #insert_rare_array=self._build_random_array(rare_array,0,len(rare_array),False)
+            #insert_rare_array=self._build_random_array(rare_array,0,len(rare_array),False,False)
             insert_rare_array=rare_array
             
             self.randomlize_xlist[now:now]=insert_rare_array

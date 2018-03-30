@@ -32,7 +32,27 @@ class draw_pic(object):
         plt.colorbar(sc)
         plt.show()
         pass
-    
+
+class draw_sca(object):
+    def __init__(self,x,y,alpha=False):
+        fig,ax = plt.subplots()
+        fig.set_size_inches(12,12)
+        ax.grid(True)
+        a=x
+        b=y
+        cm = plt.cm.get_cmap('RdYlBu')
+        z=[1 for i in range(len(x))]
+        if alpha==False:
+            pass
+        else:
+            pass
+        
+        
+        sc = plt.scatter(b, a, c=z,alpha=0.3,vmin=0, vmax=1256, s=35, cmap=cm)
+        plt.colorbar(sc)
+        plt.show()
+        pass
+    pass
 if __name__ == '__main__':
     a=[x for x in range(500)]
     #a is xaxis
