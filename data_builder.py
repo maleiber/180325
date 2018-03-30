@@ -21,7 +21,7 @@ class data_builder(object):
         self.random_factor=random_factor
         self.common=commonfactor
         self.build_array()
-        #self._build_random_array()
+        self._build_random_array()
                    
             
         #

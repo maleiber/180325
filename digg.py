@@ -109,6 +109,7 @@ class bm_analyze(object):
         self.start_index=[[] for i in self.data_sign]
         #start index [index1,index2,index3]
         #   each index:[[end1,time],[end2,time]]
+        #       [time] should bd [start pos]
         #   end will be record when time>1
         #   could get the len by end and start
         #   end ought be sorted
@@ -117,7 +118,7 @@ class bm_analyze(object):
         for i in range(len(self.data_sign)):
             start=i
             end=i+w
-            print('end',end)
+            #print('end',end)
             if end>=len(self.data_sign):
                 #goal sub exceed
                 break
@@ -127,34 +128,43 @@ class bm_analyze(object):
                 pattern_array=bm_test.BoyerMooreHorspool(sub_seq,self.data_sign)
                 
                 if(len(pattern_array))>1:
-                    print ('effective sub seq at:',i,'time',len(pattern_array))
+                    pass
+                    #print ('effective sub seq at:',i,'time',len(pattern_array))
                 for pos in pattern_array:    
-                    self.start_index[pos].append([pos+w,len(pattern_array)])
+                    self.start_index[pos].append([pos+w,pattern_array])
                 #[time(or key value) position]
                 #self.sub_seq_information.append([self._value_sub_seq_in_rare(pattern_array,sub_seq),pattern_array,sub_len])
-                print('subseq',sub_seq)
-                print ('prev_pa',pattern_array)
+                #print('subseq',sub_seq)
                 self.sub_dict[hash(tuple(sub_seq))]=pattern_array
+                #print ('sub_seq',sub_seq,'added into dict',len(sub_seq))
                 #sub_dict record startpos of sub sequence
         print ('ttlen',len(self.data_sign))
-        input()
+
+        
+        
+        
+        
         while w<self.max_len:
+            print('w',w)
             for i in range(len(self.data_sign)):
                 start=i
                 end=i+w
-                print('end',end)
+                
                 if end+1>=len(self.data_sign):
                     #goal sub exceed
                     break
                 prev_seq=self.data_sign[start:end]
                 
                 now_seq=[x for x in prev_seq]
-                now_seq.append(self.data_sign[end+1])
-                print ('prev_seq',prev_seq,len(prev_seq))
-                print ('now_seq',now_seq,len(now_seq))
+                now_seq.append(self.data_sign[end])
+                #in fact next pos is end!
+                #print ('prev_seq',prev_seq,len(prev_seq))
+                #print ('now_seq',now_seq,len(now_seq))
                 prev_seq_hash_key=hash(tuple(prev_seq))
                 prev_pa=self.sub_dict[prev_seq_hash_key]
-                print ('prev_pa',prev_pa)
+                #there must have the key because last time have used it
+                
+                #print ('prev_pa',prev_pa)
                 now_pa=[start]
                 for pos in prev_pa:
                     if pos!=start:
@@ -166,11 +176,12 @@ class bm_analyze(object):
                             now_pa.append(pos)
                 
                 if(len(now_pa))>1:
-                    print ('effective sub seq at:',i,'time',len(now_pa))
+                    pass
+                    #print ('effective sub seq at:',i,'time',len(now_pa))
                 for pos in now_pa:    
-                    self.start_index[pos].append([pos+w+1,len(now_pa)])            
+                    self.start_index[pos].append([pos+w+1,now_pa])            
                 self.sub_dict[hash(tuple(now_seq))]=now_pa
-                
+                #print ('sub_seq',now_seq,'added into dict',len(now_seq))
                 
             w=w+1
         
@@ -234,32 +245,43 @@ class bm_analyze(object):
     
     def _value_sub_seq_in_rare_slide(self):
         #value in slide window
-        #give [value,[start,end]]
+        #give [value,len,[pos,.]]
         value_of_array=[]
         #start index [index1,index2,index3]
-        #   each index:[[end1,time],[end2,time]]
+        #   each index:[[end1,[pos,.]],[end2,[pos,.]]]
         for i in range(len(self.start_index)):
             count=0
             self.start_index[i]=sorted(self.start_index[i],key=lambda x:x[0])
             for p in self.start_index[i]:
-                if p[1]>1:
-                    count=count+p[1]-1
-                    value=(p[0]-i)*p[1]/count
-                    value_of_array.append([value,[i,p[0]]])
+                if len(p[1])>1:
+                    count=count+len(p[1])-1
+                    value=(p[0]-i)*len(p[1])/(count*count)
+                    value_of_array.append([value,p[0]-i,p[1]])
         #test
         color_value_array=[10 for x in self.dataseq]
         self.color_value=[]
         value_of_array=sorted(value_of_array,key=lambda x:x[0],reverse=True)
+        value_normalize=[v[0] for v in value_of_array]
+        value_normalize=Z_ScoreNormalization(value_normalize,np.average(value_normalize),np.std(value_normalize))
+        min_v=min(value_normalize)
+        max_v=max(value_normalize)
         
+        for i in range(len(value_of_array)):
+            value_of_array[i][0]=250*(value_normalize[i]-min_v)/(max_v-min_v)
+            
         print (value_of_array)
         for pair in value_of_array:
             if pair[0]>70:
-                (start,end)=pair[1]
-                for i in range(start,end):
-                    color_value_array[i]=pair[0]
+                (startpos,leng)=(pair[2],pair[1])
+                for p in startpos:
+                    for i in range(leng):
+                        color_value_array[p+i]=max(pair[0],color_value_array[p+i])
         self.color_value=color_value_array            
         pass
+    
+    
     def _fill_color_value(self,match_number=6):
+        #@deprecated
         #strgory change: 1match,1color
         
         self.color_value=[]
@@ -284,8 +306,8 @@ def Z_ScoreNormalization(x,mu,sigma):
 
 if __name__=='__main__':
     
-    b=data_builder.data_builder(20,30,1200,0.025,1)
-    a=[x for x in range(1200)]
+    b=data_builder.data_builder(20,30,2200,0.025,1)
+    a=[x for x in range(2200)]
     draw_pic.draw_pic( b.randomlize_xlist,False,a)
     
     b.add_rare(100,80)
