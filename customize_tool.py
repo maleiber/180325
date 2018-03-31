@@ -23,3 +23,6 @@ def cos(vector1,vector2):
         return 0
     else:  
         return dot_product / ((normA*normB)**0.5)  
+    
+if __name__=='__main__':
+    print (1/cos([1,2,-3],[-1,-2,-3]) -1)
