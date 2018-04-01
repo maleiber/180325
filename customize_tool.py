@@ -8,7 +8,10 @@ import numpy
 def Z_ScoreNormalization(x):
     mu=numpy.average(x)
     sigma=numpy.std(x)
-    x = (x - mu) / sigma;  
+    #x = (x - mu) / sigma;  
+    x=[t-mu for t in x]
+    x=[t/sigma for t in x]
+    
     return x;  
 def cos(vector1,vector2):  
     dot_product = 0.0;  

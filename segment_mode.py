@@ -143,7 +143,7 @@ class segment_mode(object):
             pass
         #take a picture
         a=[x for x in range(len(new_sign))]
-        draw_pic.draw_pic( new_sign,False,a)
+        draw_pic.draw_pic( new_sign,a,a)
         self.data_sign=new_sign
         
         pass
@@ -171,6 +171,7 @@ class segment_mode(object):
         #the goal subseq is after now, before has been found.
         
         self.sub_cos={}
+        e_2=math.exp(2)
         #calulate cos of all sub
         for p1 in self.sub_dict:
             s1,e1=self.sub_dict[p1]
@@ -179,14 +180,16 @@ class segment_mode(object):
             for p2 in self.sub_dict:
                 s2,e2=self.sub_dict[p2]
                 
-                if s2>e1 or s1>e2:
+                if s2!=s1:
                     sub1=self.data_sign[s1:e1]
                     sub2=self.data_sign[s2:e2]
                     value=cos(sub1,sub2)
                     #range is(-1,1)
                     #closer to one ,more similar
                     #self.sub_cos[(s1,e1,s2,e2)]=value
-                    value=-1*(value-1)
+                    
+                    value=math.exp(value+1)/e_2
+                    value=4*(1-value)
                     self.__add_sub_value((s1,e1),(s2,e2),value)
         #caculate cos finish
         #caculate d_c
@@ -214,9 +217,10 @@ class segment_mode(object):
         #print('density:',density_set)
         x_array=[x[0][0] for x in density_set]
         y_array=[x[1] for x in density_set]
+        t_array=[x for x in x_array]
         #all fin
         print('theta')
-        draw_pic.draw_pic( y_array,False,x_array,False)
+        draw_pic.draw_pic( y_array,t_array,x_array,False)
         
         
         self.data_rou_theta=[]
@@ -226,14 +230,14 @@ class segment_mode(object):
         for pair in density_set:
             s1,e1=pair[0]
             neighborhood=pair[1]
-            min_theta=float('Inf')
+            min_theta=999
             if i+1<len(density_set):
                 #forget to except the start place
                 # it cannot repeat in same time
                 for next_pair in density_set[i+1:]:
                     #compare with all rou> now
                     s2,e2=next_pair[0]
-                    if s2>e1 or s1>e2:
+                    if s2!=s1:
                         
                         min_theta=min(min_theta,self.__get_sub_value((s1,e1),(s2,e2)))
                     pass
@@ -245,12 +249,28 @@ class segment_mode(object):
                 break
             #forget i=i+1
             i=i+1
-        
+        #standardlize
         x_array=[x[1] for x in self.data_rou_theta]
+        x_array=Z_ScoreNormalization(x_array)
+        minx=min(x_array)
+        x_array=[x-minx for x in x_array]
+        
         y_array=[x[2] for x in self.data_rou_theta]
+        y_array=Z_ScoreNormalization(y_array)
+        miny=min(y_array)
+        y_array=[y-miny for y in y_array]
+        
+        
+        t_array=[x[0][0] for x in self.data_rou_theta]
+        for i in range(len(self.data_rou_theta)):
+            rou=x_array[i]
+            theta=y_array[i]
+            gamma=rou*theta
+            self.data_rou_theta[i]=[self.data_rou_theta[i][0],rou,theta,gamma]
         #all fin
-        #print('y_array',y_array)
-        draw_pic.draw_pic( y_array,False,x_array,False)
+        #print('x_array',x_array,'len',len(x_array))
+        #print('x_array',y_array,'len',len(y_array))
+        draw_pic.draw_pic( y_array,t_array,x_array,False)
         pass
     
     def __count_dc_of_cos_dict(self):
@@ -261,12 +281,14 @@ class segment_mode(object):
             sub_dict=self.sub_cos[k1]
             for k2 in sub_dict:
                 value_seq.append(sub_dict[k2])
-        t=0.015*len(value_seq)
+        t=0.012*len(value_seq)
         t=round(t)
+        t=max(t,1)
         value_seq.sort()
         
         #print('value seq:', value_seq)
-        #print('dc=',value_seq[t])
+        #print('t=',t)
+        self.dc=value_seq[t]
         return value_seq[t]
         pass
     def __get_sub_value(self,seg1,seg2):
@@ -325,9 +347,140 @@ class segment_mode(object):
         self.dataseq
     
     def density_clu(self):
+        #self.data_rou_theta[i]=[(s1,e1),rou,theta,gamma]
+        self.data_rou_theta=sorted(self.data_rou_theta,key=lambda x:x[3],reverse=True)
+        clu_center=[]
+        #clu_center record inner
+        out_center=[]
+        #out record outer
+        inner_clu_threshold=2
+        outer_clu_threshold=0.1
+        if_partition={}
+        for key in self.sub_cos:
+            s1,e1=key
+            for i in range(s1,e1):    
+                if_partition[i]=False
+        #max_e=len(if_partition)-1
+        #record inner
+        for pair in self.data_rou_theta:
+            if pair[3]>=inner_clu_threshold:
+                s1,e1=pair[0]
+                now_center=(s1,e1)
+                now_clu=[]
+                #judge all have distance with center
+                if self.sub_cos.get((s1,e1))==None:
+                    seg1_dict={}
+                else:
+                    seg1_dict=self.sub_cos.get((s1,e1))
+                    
+                for key in seg1_dict:
+                    s2,e2=key
+                    if s2>e1 or s1>e2:
+                        s2e2_done=False
+                        
+                        for i in range(s2,s2+1):  
+                            if i in if_partition and if_partition[i]==True:
+                                #has been divide
+                                s2e2_done=True
+                                break
+                        if s2e2_done==True:
+                            continue
+                        if seg1_dict[key]<=self.dc:
+                            #add to this clu
+                            now_clu.append(key)
+                            for i in range(s2,s2+1):    
+                                if_partition[i]=True
+                            #had been divided
+                #often match at least appearence 2 times
+                if len(now_clu)>1:
+                    clu_center.append([now_center,now_clu])
+            else:
+                pass
+                #not in clu_center is outlier
+        #recode outer
+        for pair in self.data_rou_theta:
+            if pair[3]<outer_clu_threshold:
+                s1,e1=pair[0]
+                now_center=(s1,e1)
+                now_clu=[]
+                #judge all have distance with center
+                if self.sub_cos.get((s1,e1))==None:
+                    seg1_dict={}
+                else:
+                    seg1_dict=self.sub_cos.get((s1,e1))
+                    
+                for key in seg1_dict:
+                    s2,e2=key
+                    if s2>e1 or s1>e2:
+                        s2e2_done=False
+                        for i in range(s2,e2):   
+                            if i in if_partition and if_partition[i]==True:
+                                #has been divide
+                                s2e2_done=True
+                                break
+                        if s2e2_done==True:
+                            continue
+                        if seg1_dict[key]<=self.dc:
+                            #add to this clu
+                            now_clu.append(key)
+                            for i in range(s2,e2):    
+                                if_partition[i]=True
+                            #had been divided
+                if len(now_clu)>1:
+                    out_center.append([now_center,now_clu])
+            else:
+                pass
+        self.inner_clu=clu_center 
+        self.outer_clu=out_center
+        
+        #time to show
+        y_array=self.data_sign
+        x_array=[x for x in range(len(y_array))]
+        
+        print ('inner cluster num:',len(self.inner_clu))
+        print (self.inner_clu)
+        max_clu=len(self.inner_clu)
+        clu_array=[max_clu for x in x_array]
+        nowcolor=0
+        for pair in self.inner_clu:
+            color_array=[]
+            color_array=pair[1]
+            color_array.append(pair[0])
+            #each segment
+            if len(color_array)<2:
+                continue
+            for p in color_array:
+                s1,e1=p
+                #fill (s1,e1)
+                for i in range(s1,e1):
+                    clu_array[i]=nowcolor
+            #for next time color changed
+            nowcolor=nowcolor+1
+        clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
+        draw_pic.draw_pic( y_array,clu_array,x_array)
         
         
-        
+        print ('outter cluster num:',len(self.outer_clu))
+        print (self.outer_clu)
+        max_clu=len(self.outer_clu)
+        clu_array=[max_clu for x in x_array]
+        nowcolor=0
+        for pair in self.outer_clu:
+            color_array=[]
+            color_array=pair[1]
+            color_array.append(pair[0])
+            #each segment
+            if len(color_array)<2:
+                continue
+            for p in color_array:
+                s1,e1=p
+                #fill (s1,e1)
+                for i in range(s1,e1):
+                    clu_array[i]=nowcolor
+            #for next time color changed
+            nowcolor=nowcolor+1
+        clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
+        draw_pic.draw_pic( y_array,clu_array,x_array)
         pass
     pass
 
@@ -343,4 +496,5 @@ if __name__=='__main__':
     b.insert_rare_in_rlist()
     c=segment_mode(70,100, b.randomlize_xlist)
     c.slide_cos_search()
+    c.density_clu()
     pass

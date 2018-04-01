@@ -17,16 +17,22 @@ class draw_pic(object):
         fig.set_size_inches(48.5, 10.5)
         ax.grid(True)
         a=yarray
-        cm = plt.cm.get_cmap('RdYlBu')
-        if xcolor==False:
+        v_min=0
+        v_max=250
+        #cm = plt.cm.get_cmap('RdYlBu')
+        cm = plt.cm.get_cmap('brg')
+        if type(xcolor)==bool:
             z=[250 for i in yarray]
         else:
             z=xcolor
-        if xarray==False:
+            v_min=min(z)
+            v_max=max(z)
+        
+        if type(xarray)==bool :
             b=[i for i in range(len(yarray))]
         else:
             b=xarray
-        sc = plt.scatter(b, a, c=z, vmin=0, vmax=256, s=35, cmap=cm)
+        sc = plt.scatter(b, a, c=z, vmin=v_min, vmax=v_max, s=35, cmap=cm)
         if draw_line==True:
             ax.plot(b,a,alpha=0.2)
         plt.colorbar(sc)
