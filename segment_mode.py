@@ -338,13 +338,41 @@ class segment_mode(object):
         self.sub_cos[(s2,e2)]=seg2_dict   
         
         pass
-    
-    def segment_mode(self):
-        #bottom_up fitting
-        #fitting the raw and signalize it.
-        #  not only can reduce total length but also take out noise
-        #  extremum lost
-        self.dataseq
+    def build_pattern_of_symbol(self,unique_string):
+        #unique string is important to differ this time sequence and other
+        pattern_of_symbol=[]
+        start_record=[]
+        for pair in self.outer_clu:
+            s1,e1=pair[0]
+            all_start=[x[0] for x in pair[1]]
+            key_array=[x[0] for x in pair[1]]
+            key_array.insert(0,unique_string)
+            hash_key=tuple(key_array)
+            #all_start.append(s1)
+            #all start position of this cluster
+            for start in all_start:
+                if start not in start_record:
+                    pattern_of_symbol.append([start,hash_key])
+                    start_record.append(start)
+            pass
+        for pair in self.inner_clu:
+            s1,e1=pair[0]
+            all_start=[x[0] for x in pair[1]]
+            key_array=[x[0] for x in pair[1]]
+            key_array.insert(0,unique_string)
+            hash_key=tuple(key_array)
+            #all_start.append(s1)
+            #all start position of this cluster
+            for start in all_start:    
+                if start not in start_record:
+                    pattern_of_symbol.append([start,hash_key])
+                    start_record.append(start)
+            
+            pass
+        pattern_of_symbol=sorted(pattern_of_symbol,key=lambda x:x[0])
+        self.pattern_symbol=pattern_of_symbol
+        return self.pattern_symbol
+        pass
     
     def density_clu(self):
         #self.data_rou_theta[i]=[(s1,e1),rou,theta,gamma]
@@ -497,4 +525,6 @@ if __name__=='__main__':
     c=segment_mode(70,100, b.randomlize_xlist)
     c.slide_cos_search()
     c.density_clu()
+    ret_val=c.build_pattern_of_symbol('a')
+    print (ret_val,'len:',len(ret_val))
     pass
