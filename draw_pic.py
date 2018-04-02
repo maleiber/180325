@@ -10,7 +10,7 @@ import random
 import math
 
 class draw_pic(object):
-    def __init__(self,yarray,xcolor=False,xarray=False,draw_line=True):
+    def __init__(self,yarray,xcolor=False,xarray=False,draw_line=True,save_name=''):
         #value of yarray is necessary
         #print (yarray,xcolor,xarray)
         fig,ax = plt.subplots()
@@ -36,6 +36,9 @@ class draw_pic(object):
         if draw_line==True:
             ax.plot(b,a,alpha=0.2)
         plt.colorbar(sc)
+        if len(save_name)>0:
+            save_name=save_name+'.png'
+            plt.savefig(save_name, dpi=100)
         plt.show()
         pass
 

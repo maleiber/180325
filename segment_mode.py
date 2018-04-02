@@ -5,12 +5,18 @@ Created on Fri Mar 30 21:09:56 2018
 @author: 赵怀菩
 """
 from customize_tool import *
+from FP_tree import *
 import draw_pic
 import data_builder
 import math
+import random
+import sys
+sys.path.append("D:/zhp_workspace.180125")
+import main
 
 class segment_mode(object):
-    def __init__(self,minl,maxl,data_array):
+    def __init__(self,minl,maxl,data_array,name=''):
+        self.name=name
         self.min_len=minl
         self.max_len=maxl
         self.dataseq=data_array
@@ -53,7 +59,9 @@ class segment_mode(object):
 #            prev=now
 #        #finished dx
         a=[i for i in range(len(self.data_sign))]
-        draw_pic.draw_pic(self.data_sign,False,a)
+        outputname='origin_seg_'
+        outputname=outputname+self.name
+        draw_pic.draw_pic(self.data_sign,False,a,save_name=outputname)
         pass
     def _bottom_up_merge(self):
         self.__build_origin_segment()
@@ -143,7 +151,9 @@ class segment_mode(object):
             pass
         #take a picture
         a=[x for x in range(len(new_sign))]
-        draw_pic.draw_pic( new_sign,a,a)
+        outputname='af_merge_seg_'
+        outputname=outputname+self.name
+        draw_pic.draw_pic( new_sign,a,a,save_name=outputname)
         self.data_sign=new_sign
         
         pass
@@ -219,8 +229,8 @@ class segment_mode(object):
         y_array=[x[1] for x in density_set]
         t_array=[x for x in x_array]
         #all fin
-        print('theta')
-        draw_pic.draw_pic( y_array,t_array,x_array,False)
+        #print('theta')
+        #draw_pic.draw_pic( y_array,t_array,x_array,False)
         
         
         self.data_rou_theta=[]
@@ -270,7 +280,9 @@ class segment_mode(object):
         #all fin
         #print('x_array',x_array,'len',len(x_array))
         #print('x_array',y_array,'len',len(y_array))
-        draw_pic.draw_pic( y_array,t_array,x_array,False)
+        outputname='rou_theta_'
+        outputname=outputname+self.name
+        draw_pic.draw_pic( y_array,t_array,x_array,False,save_name=outputname)
         pass
     
     def __count_dc_of_cos_dict(self):
@@ -281,7 +293,7 @@ class segment_mode(object):
             sub_dict=self.sub_cos[k1]
             for k2 in sub_dict:
                 value_seq.append(sub_dict[k2])
-        t=0.012*len(value_seq)
+        t=0.005*len(value_seq)
         t=round(t)
         t=max(t,1)
         value_seq.sort()
@@ -382,7 +394,7 @@ class segment_mode(object):
         out_center=[]
         #out record outer
         inner_clu_threshold=2
-        outer_clu_threshold=0.1
+        outer_clu_threshold=1.2
         if_partition={}
         for key in self.sub_cos:
             s1,e1=key
@@ -393,6 +405,7 @@ class segment_mode(object):
         for pair in self.data_rou_theta:
             if pair[3]>=inner_clu_threshold:
                 s1,e1=pair[0]
+                s1e1_done=False
                 now_center=(s1,e1)
                 now_clu=[]
                 #judge all have distance with center
@@ -400,13 +413,19 @@ class segment_mode(object):
                     seg1_dict={}
                 else:
                     seg1_dict=self.sub_cos.get((s1,e1))
-                    
+                for i in range(s1,e1):   
+                    if i in if_partition and if_partition[i]==True:
+                        #has been divide
+                        s1e1_done=True
+                        break  
+                if s1e1_done==True:
+                    continue
                 for key in seg1_dict:
                     s2,e2=key
                     if s2>e1 or s1>e2:
                         s2e2_done=False
                         
-                        for i in range(s2,s2+1):  
+                        for i in range(s2,e2):  
                             if i in if_partition and if_partition[i]==True:
                                 #has been divide
                                 s2e2_done=True
@@ -416,7 +435,9 @@ class segment_mode(object):
                         if seg1_dict[key]<=self.dc:
                             #add to this clu
                             now_clu.append(key)
-                            for i in range(s2,s2+1):    
+                            for i in range(s2,e2):    
+                                if_partition[i]=True
+                            for i in range(s1,e1):    
                                 if_partition[i]=True
                             #had been divided
                 #often match at least appearence 2 times
@@ -429,6 +450,7 @@ class segment_mode(object):
         for pair in self.data_rou_theta:
             if pair[3]<outer_clu_threshold:
                 s1,e1=pair[0]
+                s1e1_done=False
                 now_center=(s1,e1)
                 now_clu=[]
                 #judge all have distance with center
@@ -436,7 +458,13 @@ class segment_mode(object):
                     seg1_dict={}
                 else:
                     seg1_dict=self.sub_cos.get((s1,e1))
-                    
+                for i in range(s1,e1):   
+                    if i in if_partition and if_partition[i]==True:
+                        #has been divide
+                        s1e1_done=True
+                        break  
+                if s1e1_done==True:
+                    continue
                 for key in seg1_dict:
                     s2,e2=key
                     if s2>e1 or s1>e2:
@@ -446,12 +474,14 @@ class segment_mode(object):
                                 #has been divide
                                 s2e2_done=True
                                 break
-                        if s2e2_done==True:
-                            continue
+                        #if s2e2_done==True:
+                        #    continue
                         if seg1_dict[key]<=self.dc:
                             #add to this clu
                             now_clu.append(key)
                             for i in range(s2,e2):    
+                                if_partition[i]=True
+                            for i in range(s1,e1):    
                                 if_partition[i]=True
                             #had been divided
                 if len(now_clu)>1:
@@ -465,8 +495,8 @@ class segment_mode(object):
         y_array=self.data_sign
         x_array=[x for x in range(len(y_array))]
         
-        print ('inner cluster num:',len(self.inner_clu))
-        print (self.inner_clu)
+        #print ('inner cluster num:',len(self.inner_clu))
+        #print (self.inner_clu)
         max_clu=len(self.inner_clu)
         clu_array=[max_clu for x in x_array]
         nowcolor=0
@@ -485,11 +515,13 @@ class segment_mode(object):
             #for next time color changed
             nowcolor=nowcolor+1
         clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
-        draw_pic.draw_pic( y_array,clu_array,x_array)
+        outputname='frequent_sequence_'
+        outputname=outputname+self.name
+        draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname)
         
         
-        print ('outter cluster num:',len(self.outer_clu))
-        print (self.outer_clu)
+        #print ('outter cluster num:',len(self.outer_clu))
+        #print (self.outer_clu)
         max_clu=len(self.outer_clu)
         clu_array=[max_clu for x in x_array]
         nowcolor=0
@@ -508,23 +540,152 @@ class segment_mode(object):
             #for next time color changed
             nowcolor=nowcolor+1
         clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
-        draw_pic.draw_pic( y_array,clu_array,x_array)
+        outputname='rare_sequence_'
+        outputname=outputname+self.name
+        draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname)
         pass
     pass
 
-
+def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
+    #seg array:
+    #{name:y_array},...
+    #one time one rule
+    t_array_dict={}
+    for name in seg_dict:
+        temp_t_array=[0 for y in seg_dict[name]]
+        t_array_dict[name]=temp_t_array
+    #init all color finished
+    start_array=rule[0][0]
+    end_array=rule[0][1]
+    believe=rule[1]
+    #in one key,
+    rule_num=rulenum
+    for k in start_array:
+        name=k[0]
+        temp_color=t_array_dict[name]
+        for i in k[1:]:
+            for j in range(0,width):
+                temp_color[i+j]=believe
+        t_array_dict[name]=temp_color    
+    for k in end_array:
+        name=k[0]
+        temp_color=t_array_dict[name]
+        for i in k[1:]:
+            for j in range(0,width):
+                temp_color[i+j]=believe
+        t_array_dict[name]=temp_color
+        
+    for name in seg_dict:
+        t_array=t_array_dict[name]
+        y_array=seg_dict[name]
+        x_array=[i for i in range(len(y_array))]
+        outputname=name+'_rule_'+str(rule_num)
+        outputname=outputname+'fre'+str(believe)[:5]
+        draw_pic.draw_pic( y_array,t_array,x_array,save_name=outputname)
+        
+    pass
 
 if __name__=='__main__':
-    b=data_builder.data_builder(20,30,1200,0.025,1)
-    a=[x for x in range(1200)]
-    #draw_pic.draw_pic( b.randomlize_xlist,False,a)
     
-    b.add_rare(100,80)
-    b.add_rare(100,80)
-    b.insert_rare_in_rlist()
-    c=segment_mode(70,100, b.randomlize_xlist)
-    c.slide_cos_search()
-    c.density_clu()
-    ret_val=c.build_pattern_of_symbol('a')
-    print (ret_val,'len:',len(ret_val))
+    
+#    A=data_builder.data_builder(20,30,1200,0.025,1)
+#    a_x_array=[x for x in range(1200)]
+#    #draw_pic.draw_pic( b.randomlize_xlist,False,a)
+#    
+#    A.add_rare(100,80,[1,150])
+#    A.add_rare(100,80,[300,450])
+#    A.insert_rare_in_rlist()
+#    A_seg=segment_mode(70,100, A.randomlize_xlist)
+#    A_seg.slide_cos_search()
+#    A_seg.density_clu()
+#    A_sequence=A_seg.build_pattern_of_symbol('a')
+#    
+#    B=data_builder.data_builder(20,30,1200,0.025,1)
+#    b_x_array=[x for x in range(1200)]
+#    #draw_pic.draw_pic( b.randomlize_xlist,False,a)
+#    
+#    B.add_rare(100,80,[2,151])
+#    B.add_rare(100,80,[301,451])
+#    B.insert_rare_in_rlist()
+#    B_seg=segment_mode(70,100, B.randomlize_xlist)
+#    B_seg.slide_cos_search()
+#    B_seg.density_clu()
+#    B_sequence=B_seg.build_pattern_of_symbol('b')
+    sitelist=[]
+    for file in diskwalk("D:/zhp_workspace/35site").paths():
+        print(file)
+        filename=file
+        sitelist.append(timeseq(filename))
+    for site in sitelist:
+        co_list=site.colist
+        co_seg=segment_mode(70,100, co_list,'co')
+        co_seg.slide_cos_search()
+        co_seg.density_clu()
+        co_sequence=co_seg.build_pattern_of_symbol('co')
+        
+        no2_list=site.no2list
+        no2_seg=segment_mode(70,100,no2_list,'no2')
+        no2_seg.slide_cos_search()
+        no2_seg.density_clu()
+        no2_sequence=no2_seg.build_pattern_of_symbol('no2')
+        
+        so2_list=site.so2list
+        so2_seg=segment_mode(70,100, so2_list,'so2')
+        so2_seg.slide_cos_search()
+        so2_seg.density_clu()
+        so2_sequence=so2_seg.build_pattern_of_symbol('so2')
+        
+        o3_list=site.o3list
+        o3_seg=segment_mode(70,100, o3_list,'o3')
+        o3_seg.slide_cos_search()
+        o3_seg.density_clu()
+        o3_sequence=o3_seg.build_pattern_of_symbol('o3')
+        
+        pm10_list=site.pm10list
+        pm10_seg=segment_mode(70,100, pm10_list,'pm10')
+        pm10_seg.slide_cos_search()
+        pm10_seg.density_clu()
+        pm10_sequence=pm10_seg.build_pattern_of_symbol('pm10')
+        
+        pm25_list=site.pm25list
+        pm25_seg=segment_mode(70,100, pm25_list,'pm25')
+        pm25_seg.slide_cos_search()
+        pm25_seg.density_clu()
+        pm25_sequence=pm25_seg.build_pattern_of_symbol('pm25')
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    ftree=FP_tree(2,0.7,4)
+    ftree.add_sequence(co_sequence)
+    ftree.add_sequence(no2_sequence)
+    ftree.add_sequence(so2_sequence)
+    ftree.add_sequence(o3_sequence)
+    ftree.add_sequence(pm10_sequence)
+    ftree.add_sequence(pm25_sequence)
+
+    ftree.structure_sub_tree()
+    ftree.get_associate_rule()
+    #print 2 pic
+    i=0
+    seg_dict={}
+    seg_dict['co']=co_seg.data_sign
+    seg_dict['so2']=so2_seg.data_sign
+    seg_dict['no2']=no2_seg.data_sign
+    seg_dict['o3']=o3_seg.data_sign
+    seg_dict['pm10']=pm10_seg.data_sign
+    seg_dict['pm25']=pm25_seg.data_sign
+    for r in ftree.effective_rule:
+        #print (r[0][0],'=>',r[0][1],'believe:',r[1])
+        show_rules_in_segment_mode(seg_dict,r,i)
+        if i>10:
+            break
+        i=i+1
+        
+    #print (ret_val,'len:',len(ret_val))
     pass

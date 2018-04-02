@@ -21,7 +21,7 @@ class data_builder(object):
         self.random_factor=random_factor
         self.common=commonfactor
         self.build_array()
-        self._build_random_array()
+        #self._build_random_array()
                    
             
         #
@@ -82,7 +82,7 @@ class data_builder(object):
         if change_randomlize_array==True:
             self.randomlize_xlist=temp_array
         return temp_array
-    def add_rare(self,complexity,length,posi_num=2):
+    def add_rare(self,complexity,length,pos=[],posi_num=2):
         #complexity determind how long the rare array
         #length is how long rare sequence is
         #position is where rare sequence start in array
@@ -92,7 +92,7 @@ class data_builder(object):
         rarelength=int(rarelength)
         min_std=0.37*math.sqrt(complexity)
         max_std=0.91*math.sqrt(complexity)
-        position=[]
+        position=pos
         while True:
             rare_array=self.__form_rare(complexity,rarelength)
             if self._verify_rare_sequence(rare_array,min_std,max_std)==True:
